@@ -4,15 +4,19 @@ import psycopg2
 from datetime import datetime, timedelta, time as dtime
 import os
 from dotenv import load_dotenv
+from zoneinfo import ZoneInfo
 
+# 환경 변수 로딩
 load_dotenv()
 study_TOKEN = os.getenv("study_token")
+
+# Discord 봇 설정
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
-# SQLite 연결
+# PostgreSQL 연결
 conn = psycopg2.connect(
     host=os.getenv("PGHOST"),
     port=os.getenv("PGPORT"),
@@ -22,13 +26,12 @@ conn = psycopg2.connect(
 )
 cursor = conn.cursor()
 
-
-# 테이블 초기화
+# 테이블 생성
 cursor.execute(
     """
 CREATE TABLE IF NOT EXISTS study_session (
     user_id TEXT PRIMARY KEY,
-    started_at TIMESTAMP
+    started_at TIMESTAMPTZ
 );
 """
 )
@@ -41,16 +44,21 @@ CREATE TABLE IF NOT EXISTS study_total (
 );
 """
 )
+conn.commit()
+
+# 공부 명령 허용 채널
 STUDY_CHANNEL_ID = 1380862167552757871
 
 
+# 공부 시작
 @bot.command(name="공부시작")
 async def start_study(ctx):
     if ctx.channel.id != STUDY_CHANNEL_ID:
         await ctx.send("⚠️ 이 명령어는 지정된 공부 채널에서만 사용할 수 있습니다.")
         return
+
     user_id = str(ctx.author.id)
-    now = datetime.now()
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
 
     cursor.execute("SELECT * FROM study_session WHERE user_id = %s", (user_id,))
     row = cursor.fetchone()
@@ -69,13 +77,15 @@ async def start_study(ctx):
     await ctx.send(f"{ctx.author.mention} 공부 시작 기록 완료! 📝")
 
 
+# 공부 종료
 @bot.command(name="공부종료")
 async def end_study(ctx):
     if ctx.channel.id != STUDY_CHANNEL_ID:
         await ctx.send("⚠️ 이 명령어는 지정된 공부 채널에서만 사용할 수 있습니다.")
         return
+
     user_id = str(ctx.author.id)
-    now = datetime.now()
+    now = datetime.now(ZoneInfo("Asia/Seoul"))
 
     cursor.execute(
         "SELECT started_at FROM study_session WHERE user_id = %s", (user_id,)
@@ -90,8 +100,12 @@ async def end_study(ctx):
 
     cursor.execute("DELETE FROM study_session WHERE user_id = %s", (user_id,))
     cursor.execute(
-        "INSERT INTO study_total (user_id, total_minutes) VALUES (%s, %s) "
-        "ON CONFLICT (user_id) DO UPDATE SET total_minutes = study_total.total_minutes + EXCLUDED.total_minutes",
+        """
+        INSERT INTO study_total (user_id, total_minutes)
+        VALUES (%s, %s)
+        ON CONFLICT (user_id)
+        DO UPDATE SET total_minutes = study_total.total_minutes + EXCLUDED.total_minutes;
+    """,
         (user_id, minutes),
     )
     conn.commit()
@@ -99,11 +113,13 @@ async def end_study(ctx):
     await ctx.send(f"{ctx.author.mention} 공부 종료! ⏰ 총 {minutes}분 공부했습니다.")
 
 
+# 랭킹 확인
 @bot.command(name="랭킹")
 async def show_ranking(ctx):
     if ctx.channel.id != STUDY_CHANNEL_ID:
         await ctx.send("⚠️ 이 명령어는 지정된 공부 채널에서만 사용할 수 있습니다.")
         return
+
     cursor.execute(
         "SELECT user_id, total_minutes FROM study_total ORDER BY total_minutes DESC LIMIT 5"
     )
@@ -121,10 +137,11 @@ async def show_ranking(ctx):
     await ctx.send(message)
 
 
+# 주간 초기화 (월요일 00:00 기준)
 @tasks.loop(time=dtime(hour=0, minute=0))
 async def reset_weekly():
-    today = datetime.today()
-    if today.weekday() == 0:
+    today = datetime.now(ZoneInfo("Asia/Seoul"))
+    if today.weekday() == 0:  # 월요일
         cursor.execute("UPDATE study_total SET total_minutes = 0")
         conn.commit()
         print("✅ 주간 공부 시간 초기화 완료")
@@ -136,4 +153,5 @@ async def on_ready():
     reset_weekly.start()
 
 
+# 실행
 bot.run(study_TOKEN)
