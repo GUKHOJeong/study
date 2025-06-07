@@ -1,4 +1,5 @@
 import discord
+from discord.ext import commands, tasks
 import psycopg2
 from datetime import datetime, timedelta, time as dtime
 import os
@@ -53,7 +54,10 @@ async def start_study(ctx):
 
     cursor.execute("SELECT * FROM study_session WHERE user_id = %s", (user_id,))
     if cursor.fetchone():
-        await ctx.send(f"{ctx.author.mention} 이미 공부를 시작하셨습니다!")
+        started_at = row[0]
+        await ctx.send(
+            f"{ctx.author.mention} 이미 공부를 시작하셨습니다! 시작 시간: `{started_at.strftime('%H:%M:%S')}`"
+        )
         return
 
     cursor.execute(
