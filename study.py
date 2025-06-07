@@ -53,8 +53,9 @@ async def start_study(ctx):
     now = datetime.now()
 
     cursor.execute("SELECT * FROM study_session WHERE user_id = %s", (user_id,))
-    if cursor.fetchone():
-        started_at = row[0]
+    row = cursor.fetchone()
+    if row:
+        started_at = row[1]
         await ctx.send(
             f"{ctx.author.mention} 이미 공부를 시작하셨습니다! 시작 시간: `{started_at.strftime('%H:%M:%S')}`"
         )
