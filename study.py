@@ -64,8 +64,9 @@ async def start_study(ctx):
     row = cursor.fetchone()
     if row:
         started_at = row[1]
+        started_at_kst = started_at.astimezone(ZoneInfo("Asia/Seoul"))
         await ctx.send(
-            f"{ctx.author.mention} 이미 공부를 시작하셨습니다! 시작 시간: `{started_at.strftime('%H:%M:%S')}`"
+            f"{ctx.author.mention} 이미 공부를 시작하셨습니다! 시작 시간: `{started_at_kst.strftime('%H:%M:%S')}`"
         )
         return
 
@@ -95,7 +96,7 @@ async def end_study(ctx):
         await ctx.send(f"{ctx.author.mention} 공부를 시작하지 않으셨습니다!")
         return
 
-    started_at = row[0]
+    started_at = row[0].astimezone(ZoneInfo("Asia/Seoul"))
     minutes = int((now - started_at).total_seconds() // 60)
 
     cursor.execute("DELETE FROM study_session WHERE user_id = %s", (user_id,))
