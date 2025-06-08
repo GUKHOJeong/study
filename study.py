@@ -14,7 +14,7 @@ study_TOKEN = os.getenv("study_token")
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="/", intents=intents)
 
 # PostgreSQL 연결
 conn = psycopg2.connect(
