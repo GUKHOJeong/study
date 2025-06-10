@@ -50,7 +50,13 @@ conn.commit()
 # 공부 명령 허용 채널
 STUDY_CHANNEL_ID = 1380961392362000404
 
+
 # 공부 시작
+class FakeCtx:
+    def __init__(self, interaction):
+        self.author = interaction.user
+        self.channel = interaction.channel
+        self.send = interaction.channel.send
 
 
 async def start_study(ctx):
@@ -150,11 +156,13 @@ async def study_button(ctx):
 
     async def a_callback(interaction):
         await interaction.response.defer()
-        await start_study(interaction)
+        fake_ctx = FakeCtx(interaction)
+        await start_study(fake_ctx)
 
     async def b_callback(interaction):
         await interaction.response.defer()
-        await end_study(interaction)
+        fake_ctx = FakeCtx(interaction)
+        await end_study(fake_ctx)
 
     button_a.callback = a_callback
     button_b.callback = b_callback
