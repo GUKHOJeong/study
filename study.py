@@ -149,9 +149,11 @@ async def study_button(ctx):
     button_b = Button(label="공부종료", style=discord.ButtonStyle.danger)
 
     async def a_callback(interaction):
+        await interaction.response.defer()
         await start_study(interaction)
 
     async def b_callback(interaction):
+        await interaction.response.defer()
         await end_study(interaction)
 
     button_a.callback = a_callback
