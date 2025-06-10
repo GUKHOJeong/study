@@ -1,7 +1,8 @@
 import discord
 from discord.ext import commands, tasks
+from discord.ui import Button, View
 import psycopg2
-from datetime import datetime, timedelta, time as dtime
+from datetime import datetime, time as dtime
 import os
 from dotenv import load_dotenv
 from zoneinfo import ZoneInfo
@@ -49,9 +50,9 @@ conn.commit()
 # 공부 명령 허용 채널
 STUDY_CHANNEL_ID = 1380961392362000404
 
-
 # 공부 시작
-@bot.command(name="공부시작")
+
+
 async def start_study(ctx):
     if ctx.channel.id != STUDY_CHANNEL_ID:
         await ctx.send("⚠️ 이 명령어는 지정된 공부 채널에서만 사용할 수 있습니다.")
@@ -79,7 +80,7 @@ async def start_study(ctx):
 
 
 # 공부 종료
-@bot.command(name="공부종료")
+# @bot.command(name="공부종료")
 async def end_study(ctx):
     if ctx.channel.id != STUDY_CHANNEL_ID:
         await ctx.send("⚠️ 이 명령어는 지정된 공부 채널에서만 사용할 수 있습니다.")
@@ -136,6 +137,31 @@ async def show_ranking(ctx):
         message += f"{i}. {mention} — {minutes}분\n"
 
     await ctx.send(message)
+
+
+@bot.command(name="공부버튼")
+async def study_button(ctx):
+    if ctx.channel.id != STUDY_CHANNEL_ID:
+        await ctx.send("⚠️ 이 명령어는 지정된 공부 채널에서만 사용할 수 있습니다.")
+        return
+
+    button_a = Button(label="공부시작", style=discord.ButtonStyle.success)
+    button_b = Button(label="공부종료", style=discord.ButtonStyle.danger)
+
+    async def a_callback(interaction):
+        await start_study(interaction)
+
+    async def b_callback(interaction):
+        await end_study(interaction)
+
+    button_a.callback = a_callback
+    button_b.callback = b_callback
+
+    view = View()
+    view.add_item(button_a)
+    view.add_item(button_b)
+
+    await ctx.send("📚 공부를 시작하거나 종료하려면 아래 버튼을 눌러주세요!", view=view)
 
 
 # 주간 초기화 (월요일 00:00 기준)
