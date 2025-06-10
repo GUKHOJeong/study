@@ -155,19 +155,19 @@ async def study_button(ctx):
     button_b = Button(label="공부종료", style=discord.ButtonStyle.danger)
 
     async def a_callback(interaction):
-        await interaction.response.defer()
+        await interaction.response.send_message("⏳ 작업 중입니다...", ephemeral=True)
         fake_ctx = FakeCtx(interaction)
         await start_study(fake_ctx)
 
     async def b_callback(interaction):
-        await interaction.response.defer()
+        await interaction.response.send_message("⏳ 작업 중입니다...", ephemeral=True)
         fake_ctx = FakeCtx(interaction)
         await end_study(fake_ctx)
 
     button_a.callback = a_callback
     button_b.callback = b_callback
 
-    view = View()
+    view = View(timeout=None)
     view.add_item(button_a)
     view.add_item(button_b)
 
